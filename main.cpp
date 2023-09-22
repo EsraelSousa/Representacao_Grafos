@@ -53,9 +53,34 @@ bool isUmaEstruturaValida(string &s){
     return 0;
 }
 
+void showComandosEstruturas(){
+    cout << "Veja os comandos validos\n";
+    cout << "\033[1;34m Comando -> Estrutura\n\033[0m";
+    cout << "\033[1;34m  -ma    -> matriz de adjacencias\n\033[0m";
+    cout << "\033[1;34m  -mi    -> matriz de incidencias\n\033[0m";
+    cout << "\033[1;34m  -la    -> lista de adjacencias\n\033[0m";
+    cout << "\033[1;34m  -rv    -> representacao vetorial\n\033[0m";
+    cout << "\033[1;34m  -mp    -> matriz de pesos\n\033[0m";
+}
+
+vector<vector<int>> listaAdjacencia2matrizAdjacencia(vector<vector<edge>> &listaAdjacencia){
+    // não é possivel fazer matriz nesse programa com mais de 10^6 celulas
+    if(listaAdjacencia.size() > 1000){
+        cout << "O grafo tem muitos vertices, nao eh possivel exibir '-'\n";
+        exit(1);
+    }
+    int n = listaAdjacencia.size();
+    vector<vector<int>> matrizAdjacencia(n+1, vector<int>(n+1, 0)); // cria a matriz e seta com 0's
+    for(int i=1; i<listaAdjacencia.size(); i++){
+        for(auto &par: listaAdjacencia[i])
+            matrizAdjacencia[i][ par.first ] = 1;
+    }
+    return matrizAdjacencia;
+}
+
 void showGrafoListaAdjacencia(vector<vector<edge>> &listaAdjacencia){
     for(int i=1; i < (int)listaAdjacencia.size(); i++){
-        cout << "\033[1;31m" << i << " -> \033[0m";
+        cout << "\033[1;33m" << i << " -> \033[0m";
         bool isFirst = 1;
         for(auto &par: listaAdjacencia[i]){
             if(!isFirst) cout << ", ";
@@ -89,6 +114,12 @@ int main(int argc, char* argv[]){
     }
     if(isUmaEstruturaValida(tipoEstrutura) == false){
         cerr << "\033[1;31m O comando:\033[0m " << argv[4] <<
+        "\033[1;31m nao eh valido\n\033[0m"; 
+        showComandosEstruturas();
+        return 1;
+    }
+    if(strcmp(argv[5], "0") != 0 && strcmp(argv[5], "1") != 0){
+        cerr << "\033[1;31m O comando:\033[0m " << argv[5] <<
         "\033[1;31m nao eh valido\n\033[0m"; return 1;
     }
     ifstream arquivoInput(nomeArquivo);
@@ -96,7 +127,7 @@ int main(int argc, char* argv[]){
         cerr << "\033[1;31m Nao foi possivel abrir o arquivo:\033[0m " << argv[2] <<
         "\033[1;33m verifique se o arquivo existe!\n\033[0m"; return 1;
     }
-
+    // processar os comandos
     vector<vector<edge>> listaAdjacencia = readGrafo(nomeArquivo, isDirecionado);
     showGrafoListaAdjacencia(listaAdjacencia);
     return 0;
