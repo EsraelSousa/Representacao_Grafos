@@ -5,6 +5,8 @@
 #include <string.h>
 #include <math.h>
 #include <iomanip>
+#include <set>
+#include <map>
 
 using namespace std;
 
@@ -52,11 +54,11 @@ void checkAlocouMemoria(vector<vector< T >> &variavel){
 
 int countDigitos(int n){
     int ans = 1;
-    while(n > 9){
+    while(-9 > n || n > 9){
         ans++;
         n /= 10;
     }
-    return ans;
+    return ans + (n < 0); // (n < 0) contamos o sinal de menos também
 }
 
 vector<vector<edge>> readGrafo(string &nomeArquivo, bool isDirecionado){
@@ -130,23 +132,47 @@ vector<vector<int>> listaAdjacencia2matrizIncidencia(vector<vector<edge>> &lista
     if(isDirecionado == false) // estamos contando cada aresta duas vezes
         m /= 2;
     vector<vector<int>> matrizIncidencia(n, vector<int>(m, 0)); // as arestas serão indexadas de 0 a m-1
-    for(int i=1; i<n; i++){
-        for(auto &par: listaAdjacencia[i]){
-            if(isDirecionado){
+    checkAlocouMemoria(matrizIncidencia);
+    if(isDirecionado){
+        for(int i=1; i<n; i++){
+            for(auto &par: listaAdjacencia[i]){
                 matrizIncidencia[i][idAresta] = -1;
                 matrizIncidencia[par.first][idAresta] = 1;
+                idAresta++;
             }
-            else{ // cada aresta sai, mas também chega.
-                matrizIncidencia[i][idAresta] = 1;
-                matrizIncidencia[par.first][idAresta] = 1;
+        }
+    }
+    /* Se não é direcionado temos alguns problemas para a matriz de incidencia, na lista de adjacencia 
+    temos as arestas repetidas e temos que diferenciar arestas paralelas. Para corrigir isso vamos 
+    fazer um mapeamento das arestas */
+    else{
+        map<pair<int, int>, int> identificacaoAresta;
+        for(int i=1; i<n; i++){
+            for(auto &par: listaAdjacencia[i]){
+                // temos um aresta de u para v, onde o idenficador de u <= v
+                pair<int, int> aresta = make_pair(min(i, par.first), max(i, par.first));
+                // checo se essa aresta não apareceu nenhuma vez, para colocar ela no mapeamento
+                if(identificacaoAresta.find(aresta) == identificacaoAresta.end())
+                    identificacaoAresta[aresta] = 0; // a aresta não apareceu nenhuma vez
+                // aumento a quantidade de vez que a aresta apareceu
+                identificacaoAresta[aresta]++;
             }
-            idAresta++;
+        }
+        // agora vamos colocar na matriz de incidencias
+        for(auto &par: identificacaoAresta){
+            while(par.second){ // devido a arestas paralelas
+                matrizIncidencia[ par.first.first ][idAresta] = 1;
+                matrizIncidencia[ par.first.second ][idAresta] = 1;
+                idAresta++;
+                par.second -= 2; // -2 devido a duplicação
+            }
         }
     }
     return matrizIncidencia;
 }
 
 void showGrafoListaAdjacencia(vector<vector<edge>> &listaAdjacencia){
+    cout << "\033[1;33mLista de Adjacencias:\n\033[0m";
     for(int i=1; i < (int)listaAdjacencia.size(); i++){
         cout << "\033[1;33m" << i << " -> \033[0m";
         bool isFirst = 1;
@@ -162,6 +188,7 @@ void showGrafoListaAdjacencia(vector<vector<edge>> &listaAdjacencia){
 void showGrafoMatrizAdjacencia(vector<vector<int>> &matrizAdjacencia){
     int n = matrizAdjacencia.size();
     int qtdDigitos = countDigitos(n-1);
+    cout << "\033[1;33mMatriz de Adjacencias:\n\033[0m";
     for(int i=1; i<n; i++){
         if(i == 1)
             // um espaço para colocar os vertices na primeira coluna
@@ -182,7 +209,8 @@ void showGrafoMatrizPesos(vector<vector<double>> &matrizPesos){
     // vamos ver o maior pesso para formatar a saida
     for(int i=1; i<n; i++)
         for(int j=1; j<n; j++)
-            qtdDigitos = max(qtdDigitos, countDigitos(matrizPesos[i][j])+3);
+            qtdDigitos = max(qtdDigitos, countDigitos(matrizPesos[i][j])+ 3);
+    cout << "\033[1;33mMatriz de Pesos:\n\033[0m";
     for(int i=1; i<n; i++){
         if(i == 1)
             // um espaço para colocar os vertices na primeira coluna
@@ -202,7 +230,7 @@ void showGrafoMatrizIncidencia(vector<vector<int>> &matrizIncidencia){
     int m = matrizIncidencia[1].size(); // numeros arestas
     // pegamos o maximo de digitos que precisamos para representar um numero, (2 devido ao -1)
     int qtdEspacos = max(2, max(countDigitos(n-1), countDigitos(m-1)));
-    // identificação das arestas
+    cout << "\033[1;33mMatriz de Incidencias:\n\033[0m";
     for(int i=0; i<m; i++){
         if(i == 0)
             // um espaço para colocar os vertices na primeira coluna
@@ -225,6 +253,7 @@ void showGrafoRepresentacaoVetorial(vector<vector<edge>> &listaAdjacencia){
     int n = listaAdjacencia.size();
     vector<int> qtdEspacos(n, 0); // todas as posições com 0
     // vamos contabilizar os espaços necessários para formatar
+    cout << "\033[1;33mRepresentacao Vetorial:\n\033[0m";
     for(int i=1; i<n; i++){
         for(auto &par: listaAdjacencia[i])
             qtdEspacos[i] += countDigitos(par.first)+1;
